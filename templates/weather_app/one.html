@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weather App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    body {
+      background-color: #f8f9fa;
+      color: #212529;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    .dark-mode .card,
+    .dark-mode .form-control,
+    .dark-mode .btn,
+    .dark-mode .input-group {
+      background-color: #1e1e1e !important;
+      color: #ffffff !important;
+      border-color: #333;
+    }
+
+    .dark-mode .form-control::placeholder {
+      color: #aaa;
+    }
+
+    .dark-mode .btn-primary {
+      background-color: #333;
+      border-color: #555;
+    }
+  </style>
+
+</head>
+<body>
+  <button id="theme-toggle" class="btn btn-sm btn-outline-secondary float-end">
+    🌞
+  </button>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center">
+                <h2 class="mb-4">🌤️ Weather Forecast App</h2>
+                <form method="post" class="mb-4" id="weather-form">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="text" name="city" id="city-input" class="form-control me-2" placeholder="Enter city name" required>
+                <select name="language" class="form-select me-2" style="max-width: 150px;">
+                  <option value="en">English</option>
+                  <option value="hi">Hindi</option>
+                  <option value="fr">French</option>
+                  <option value="es">Spanish</option>
+                  <option value="de">German</option>
+                  </select>
+
+                <button class="btn btn-primary" type="submit">Get Weather</button>
+      </div>
+    </form>
+              <button type="button" class="btn btn-outline-secondary" id="locate-btn">📍 Use Current Location</button>
+              {% if favorites %}
+<div class="mb-3 m-2 text-start">
+<strong>⭐ Favorite Cities:</strong><br>
+<div class="d-flex flex-wrap gap-2 mt-2">
+  {% for city in favorites %}
+    <div class="d-flex align-items-center bg-light border rounded-pill px-3 py-1 shadow-sm">
+      <form method="post" class="me-1">
+        {% csrf_token %}
+        <input type="hidden" name="city" value="{{ city }}">
+        <button type="submit" class="btn btn-link p-0 m-0 text-decoration-none">{{ city }}</button>
+      </form>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="remove_city" value="{{ city }}">
+        <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-2" title="Remove">
+          ❌
+        </button>
+      </form>
+    </div>
+  {% endfor %}
+</div>
+</div>
+{% endif %}
+  </form>
+
+                {% if weather.city %}
+                    <div class="card m-2 p-3 shadow-sm">
+                        <h4 class="card-title">{{ weather.city }}</h4>
+                        <p class="card-text">🌡️ Temperature: {{ weather.temperature }} °C</p>
+                        <p class="card-text">☁️ Description: {{ weather.description }}</p>
+                        <p class="card-text">💧 Humidity: {{ weather.humidity }}%</p>
+                        <p class="card-text">🌬️ Wind Speed: {{ weather.wind }} m/s</p>
+                        <form method="post" action="" class="mt-3">
+    {% csrf_token %}
+    <input type="hidden" name="favorite_city" value="{{ weather.city }}">
+    <button type="submit" class="btn btn-outline-warning">⭐ Save {{ weather.city }}</button>
+</form>
+
+                    </div>
+                {% elif weather.error %}
+                    <div class="alert alert-danger mt-3">
+                        {{ weather.error }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script>
+  const toggleBtn = document.getElementById('theme-toggle');
+  const body = document.body;
+
+  // Apply saved theme
+  if (localStorage.getItem('theme') === 'dark') {
+    body.classList.add('dark-mode');
+    toggleBtn.textContent = '🌙';
+} else {
+toggleBtn.textContent = '🌞';
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    body.classList.toggle('dark-mode');
+    // Save theme preference
+    if (body.classList.contains('dark-mode')) {
+      localStorage.setItem('theme', 'dark');
+      toggleBtn.textContent = '🌙';
+
+    } else {
+      localStorage.setItem('theme', 'light');
+      toggleBtn.textContent = '🌞';
+    }
+  });
+  document.getElementById('locate-btn').addEventListener('click', () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        // Use a reverse geocoding API or OpenWeatherMap itself
+        const API_KEY = '50411742cf9597bde19ec36cced3e832';
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+            if (data.name) {
+              document.getElementById('city-input').value = data.name;
+              document.getElementById('weather-form').submit();
+            } else {
+              alert("Unable to detect city name from location.");
+            }
+          });
+      }, () => {
+        alert("Location access denied.");
+      });
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  });
+</script>
+
+</body>
+</html>
